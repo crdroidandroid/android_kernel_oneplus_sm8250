@@ -1022,6 +1022,16 @@ config CPUSETS
 
 	  Say N if unsure.
 
+config CPUSETS_ASSIST
+	bool "Cpusets configuration helper"
+	depends on CPUSETS
+	depends on ANDROID
+	help
+	  This option enables the configuration of default cpusets
+	  parameters from kernel.
+
+	  If unsure, say N.
+
 config PROC_PID_CPUSET
 	bool "Include legacy /proc/<pid>/cpuset file"
 	depends on CPUSETS
