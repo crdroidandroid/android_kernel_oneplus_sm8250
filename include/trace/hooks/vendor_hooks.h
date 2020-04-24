@@ -1,11 +1,16 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
+<<<<<<< HEAD
 /*
  * Note: we intentionally omit include file ifdef protection
  *  This is due to the way trace events work. If a file includes two
  *  trace event headers under one "CREATE_TRACE_POINTS" the first include
  *  will override the DECLARE_RESTRICTED_HOOK and break the second include.
  */
+
+#if !defined(_TRACE_VENDOR_HOOKS_H) || defined(TRACE_HEADER_MULTI_READ)
+#define _TRACE_VENDOR_HOOKS_H
+
 
 #include <linux/tracepoint.h>
 
@@ -16,7 +21,6 @@
 #undef DECLARE_RESTRICTED_HOOK
 #define DECLARE_RESTRICTED_HOOK(name, proto, args, cond) \
 	DEFINE_TRACE(name)
-
 
 /* prevent additional recursion */
 #undef TRACE_HEADER_MULTI_READ
@@ -66,7 +70,6 @@
 	}								\
 	/* vendor hooks cannot be unregistered */			\
 
-#undef DECLARE_RESTRICTED_HOOK
 #define DECLARE_RESTRICTED_HOOK(name, proto, args, cond)		\
 	__DECLARE_HOOK(name, PARAMS(proto), PARAMS(args),		\
 			cond,						\
@@ -74,3 +77,6 @@
 			PARAMS(__data, args))
 
 #endif /* TRACE_HEADER_MULTI_READ */
+
+#endif /* _TRACE_VENDOR_HOOKS_H */
+
