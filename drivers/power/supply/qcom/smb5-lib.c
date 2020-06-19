@@ -9454,6 +9454,10 @@ static void op_handle_usb_removal(struct smb_charger *chg)
 	chg->pd_tried_warp_switch = false;
 	chg->cool_down = -1;
 	op_set_hw_term_charging(false);
+#ifdef CONFIG_FORCE_FAST_CHARGE
+	chg->ffc_count = 0;
+	set_sdp_current(chg, USBIN_500MA);
+#endif
 	cancel_delayed_work_sync(&chg->pd_status_check_work);
 
 	vote(chg->fcc_votable,
