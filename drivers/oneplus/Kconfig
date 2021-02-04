@@ -1,1 +1,2 @@
 source "drivers/oneplus/vl53L1/Kconfig"
+source "drivers/oneplus/power/Kconfig"
