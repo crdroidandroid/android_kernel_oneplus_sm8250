@@ -1,0 +1,2 @@
+# oem device deriver
+source "drivers/oneplus/input/touchscreen/Kconfig"
