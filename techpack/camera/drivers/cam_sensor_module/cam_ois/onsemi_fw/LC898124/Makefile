@@ -10,8 +10,6 @@ ccflags-y += -I$(srctree)/techpack/camera/drivers/cam_req_mgr
 ccflags-y += -I$(srctree)/techpack/camera/drivers/cam_sensor_module/cam_cci
 ccflags-y += -I$(srctree)/techpack/camera/drivers/cam_smmu
 ccflags-y += -I$(srctree)/techpack/camera/drivers/cam_core/
-ccflags-y += -I$(srctree)/techpack/camera/drivers/cam_sensor_module/cam_ois/onsemi_fw/
+ccflags-y += -I$(srctree)/techpack/camera/drivers/cam_sensor_module/cam_ois/
 
-obj-$(CONFIG_SPECTRA_CAMERA) += onsemi_fw/
-
-obj-$(CONFIG_SPECTRA_CAMERA) += cam_ois_dev.o cam_ois_core.o cam_ois_soc.o
+obj-$(CONFIG_SPECTRA_CAMERA) += HighLevelCmd.o DownloadCmd.o E2PromCmd.o
