@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -64,14 +64,9 @@ static int32_t cam_actuator_power_up(struct cam_actuator_ctrl_t *a_ctrl)
 
 	if ((power_info->power_setting == NULL) &&
 		(power_info->power_down_setting == NULL)) {
-		CAM_INFO(CAM_ACTUATOR,
-			"Using default power settings");
-		rc = cam_actuator_construct_default_power_setting(power_info);
-		if (rc < 0) {
-			CAM_ERR(CAM_ACTUATOR,
-				"Construct default actuator power setting failed.");
-			return rc;
-		}
+		CAM_ERR(CAM_ACTUATOR,
+			"fatal! no power settings.");
+		return -EINVAL;
 	}
 
 	/* Parse and fill vreg params for power up settings */
@@ -259,10 +254,20 @@ int32_t cam_actuator_apply_settings(struct cam_actuator_ctrl_t *a_ctrl,
 			&(a_ctrl->io_master_info),
 			i2c_list);
 		if (rc < 0) {
+			if (i2c_list->op_code == CAM_SENSOR_I2C_POLL) {
+				a_ctrl->is_actuator_ready = false;
+				CAM_ERR(CAM_ACTUATOR, "poll failed rc %d", rc);
+			}
 			CAM_ERR(CAM_ACTUATOR,
 				"Failed to apply settings: %d",
 				rc);
 		} else {
+			if (i2c_list->op_code == CAM_SENSOR_I2C_POLL) {
+				if (rc == I2C_COMPARE_MISMATCH) {
+					a_ctrl->is_actuator_ready = false;
+					CAM_ERR(CAM_ACTUATOR, "poll failed(non-fatal), will poll later");
+				}
+			}
 			CAM_DBG(CAM_ACTUATOR,
 				"Success:request ID: %d",
 				i2c_set->request_id);
@@ -418,6 +423,8 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 	struct cam_cmd_buf_desc   *cmd_desc = NULL;
 	struct cam_actuator_soc_private *soc_private = NULL;
 	struct cam_sensor_power_ctrl_t  *power_info = NULL;
+	struct i2c_settings_list *i2c_list = NULL;
+	int ret = 0;
 
 	if (!a_ctrl || !arg) {
 		CAM_ERR(CAM_ACTUATOR, "Invalid Args");
@@ -566,6 +573,23 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 		}
 
 		if (a_ctrl->cam_act_state == CAM_ACTUATOR_ACQUIRE) {
+
+			{
+				a_ctrl->is_actuator_ready = true;
+				memset(&(a_ctrl->poll_register), 0, sizeof(struct cam_sensor_i2c_reg_array));
+				list_for_each_entry(i2c_list,
+					&(a_ctrl->i2c_data.init_settings.list_head), list) {
+					if (i2c_list->op_code == CAM_SENSOR_I2C_POLL) {
+						a_ctrl->poll_register.reg_addr = i2c_list->i2c_settings.reg_setting[0].reg_addr;
+						a_ctrl->poll_register.reg_data = i2c_list->i2c_settings.reg_setting[0].reg_data;
+						a_ctrl->poll_register.data_mask = i2c_list->i2c_settings.reg_setting[0].data_mask;
+						a_ctrl->poll_register.delay = 100; //i2c_list->i2c_settings.reg_setting[0].delay; // The max delay should be 100
+						a_ctrl->addr_type = i2c_list->i2c_settings.addr_type;
+						a_ctrl->data_type = i2c_list->i2c_settings.data_type;
+					}
+				}
+			}
+
 			rc = cam_actuator_power_up(a_ctrl);
 			if (rc < 0) {
 				CAM_ERR(CAM_ACTUATOR,
@@ -573,6 +597,29 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 				goto end;
 			}
 			a_ctrl->cam_act_state = CAM_ACTUATOR_CONFIG;
+		}
+
+		{
+			if (!a_ctrl->is_actuator_ready) {
+				if (a_ctrl->poll_register.reg_addr || a_ctrl->poll_register.reg_data) {
+					ret = camera_io_dev_poll(
+						&(a_ctrl->io_master_info),
+						a_ctrl->poll_register.reg_addr,
+						a_ctrl->poll_register.reg_data,
+						a_ctrl->poll_register.data_mask,
+						a_ctrl->addr_type,
+						a_ctrl->data_type,
+						a_ctrl->poll_register.delay);
+					if (ret < 0) {
+						CAM_ERR(CAM_ACTUATOR,
+							"i2c poll apply setting Fail: %d, is_actuator_ready %d", ret, a_ctrl->is_actuator_ready);
+					} else {
+						CAM_DBG(CAM_ACTUATOR,
+							"is_actuator_ready %d, ret %d", a_ctrl->is_actuator_ready, ret);
+					}
+					a_ctrl->is_actuator_ready = true; //Just poll one time
+				}
+			}
 		}
 
 		rc = cam_actuator_apply_settings(a_ctrl,
@@ -957,10 +1004,19 @@ int32_t cam_actuator_driver_cmd(struct cam_actuator_ctrl_t *a_ctrl,
 			ACT_APPLY_SETTINGS_NOW) {
 			rc = cam_actuator_apply_settings(a_ctrl,
 				&a_ctrl->i2c_data.init_settings);
+			if ((rc == -EAGAIN) &&
+			(a_ctrl->io_master_info.master_type == CCI_MASTER)) {
+				CAM_WARN(CAM_ACTUATOR,
+					"CCI HW is in resetting mode:: Reapplying Init settings");
+				usleep_range(5000, 5010);
+				rc = cam_actuator_apply_settings(a_ctrl,
+					&a_ctrl->i2c_data.init_settings);
+			}
+
 			if (rc < 0)
 				CAM_ERR(CAM_ACTUATOR,
-					"Cannot apply Update settings");
-
+					"Failed to apply Init settings: rc = %d",
+					rc);
 			/* Delete the request even if the apply is failed */
 			rc = delete_request(&a_ctrl->i2c_data.init_settings);
 			if (rc < 0) {
