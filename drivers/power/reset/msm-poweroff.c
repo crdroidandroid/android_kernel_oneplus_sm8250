@@ -520,6 +520,30 @@ static void msm_restart_prepare(const char *cmd)
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_KEYS_CLEAR);
 			__raw_writel(0x7766550a, restart_reason);
+		} else if (!strcmp(cmd, "sbllowmemtest")) {
+			pr_info("[op aging mem test] lunch ddr sbllowmemtest!!comm: %s, pid: %d\n"
+				, current->comm, current->pid);
+			qpnp_pon_set_restart_reason(
+					PON_RESTART_REASON_SBL_DDR_CUS);
+			__raw_writel(0x7766550b, restart_reason);
+		} else if (!strcmp(cmd, "sblmemtest")) {//op factory aging test
+			pr_info("[op aging mem test] lunch ddr sblmemtest!!comm: %s, pid: %d\n"
+				, current->comm, current->pid);
+			qpnp_pon_set_restart_reason(
+					PON_RESTART_REASON_SBL_DDRTEST);
+		__raw_writel(0x7766550b, restart_reason);
+		} else if (!strcmp(cmd, "usermemaging")) {
+			pr_info("[op aging mem test] lunch ddr usermemaging!!comm: %s, pid: %d\n"
+				, current->comm, current->pid);
+			qpnp_pon_set_restart_reason(
+					PON_RESTART_REASON_MEM_AGING);
+			__raw_writel(0x7766550b, restart_reason);
+		} else if (!strncmp(cmd, "rf", 2)) {
+			qpnp_pon_set_restart_reason(PON_RESTART_REASON_RF);
+			__raw_writel(0x77665506, restart_reason);
+		} else if (!strncmp(cmd, "ftm", 3)) {
+			qpnp_pon_set_restart_reason(PON_RESTART_REASON_FACTORY);
+			__raw_writel(0x77665504, restart_reason);
 		} else if (!strncmp(cmd, "oem-", 4)) {
 			unsigned long code;
 			int ret;
