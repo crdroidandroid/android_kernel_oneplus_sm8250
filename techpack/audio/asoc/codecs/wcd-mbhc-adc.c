@@ -632,6 +632,8 @@ static void wcd_mbhc_adc_detect_plug_type(struct wcd_mbhc *mbhc)
 	if (mbhc->mbhc_cb->mbhc_micbias_control) {
 		mbhc->mbhc_cb->mbhc_micbias_control(component, MIC_BIAS_2,
 						    MICB_ENABLE);
+		if (mbhc->micb_mv >= WCD_MBHC_THR_HS_MICB_MV)
+			mbhc->micbias_enable = true;
 	} else {
 		pr_err("%s: Mic Bias is not enabled\n", __func__);
 		return;
@@ -720,6 +722,18 @@ static void wcd_correct_swch_plug(struct work_struct *work)
 	/* Find plug type */
 	output_mv = wcd_measure_adc_continuous(mbhc);
 	plug_type = wcd_mbhc_get_plug_from_adc(mbhc, output_mv);
+
+	/* To correct headset/headphones */
+	if ((plug_type == MBHC_PLUG_TYPE_HEADPHONE) &&
+		(!wcd_swch_level_remove(mbhc))) {
+		if (mbhc->mbhc_cfg->swap_gnd_mic &&
+				mbhc->mbhc_cfg->swap_gnd_mic(component, true)) {
+			pr_info("%s: switch again, it's headset\n", __func__);
+		}
+		msleep(10);
+		output_mv = wcd_measure_adc_continuous(mbhc);
+		plug_type = wcd_mbhc_get_plug_from_adc(mbhc, output_mv);
+	}
 
 	/*
 	 * Report plug type if it is either headset or headphone
@@ -1142,6 +1156,13 @@ static irqreturn_t wcd_mbhc_adc_hs_ins_irq(int irq, void *data)
 	} while (--clamp_retry);
 
 	WCD_MBHC_RSC_LOCK(mbhc);
+
+	if (mbhc->use_usbc_detect && wcd_swch_level_remove(mbhc)) {
+		pr_warn("%s: Switch level is low ", __func__);
+		WCD_MBHC_RSC_UNLOCK(mbhc);
+		return IRQ_HANDLED;
+	}
+
 	/*
 	 * If current plug is headphone then there is no chance to
 	 * get ADC complete interrupt, so connected cable should be
