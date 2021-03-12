@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 4
 PATCHLEVEL = 19
-SUBLEVEL = 166
+SUBLEVEL = 167
 EXTRAVERSION =
 NAME = "People's Front"
 
@@ -401,7 +401,7 @@ AWK		= awk
 DTC		= scripts/dtc/dtc
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
-DEPMOD		= /sbin/depmod
+DEPMOD		= depmod
 PERL		= perl
 PYTHON		= python
 PYTHON2		= python2
