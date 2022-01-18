@@ -15,7 +15,7 @@
 #include <linux/types.h>
 #include <linux/notifier.h>
 /**********************************************************/
-enum FP_MODE{
+enum FP_MODE {
 	GF_IMAGE_MODE = 0,
 	GF_KEY_MODE,
 	GF_SLEEP_MODE,
@@ -114,10 +114,10 @@ struct gf_dev {
 
 	struct input_dev *input;
 	/* buffer is NULL unless this device is open (users > 0) */
-	unsigned users;
-	signed irq_gpio;
-	signed reset_gpio;
-	signed pwr_gpio;
+	unsigned int users;
+	signed int irq_gpio;
+	signed int reset_gpio;
+	signed int pwr_gpio;
 	int irq;
 	int irq_enabled;
 	int clk_enabled;
@@ -140,11 +140,11 @@ struct gf_dev {
 	struct pinctrl         *gf_pinctrl;
 	struct pinctrl_state   *gpio_state_enable;
 	struct pinctrl_state   *gpio_state_disable;
-	signed enable_gpio;
+	signed int enable_gpio;
 	int screen_state;
 };
-int gf_pinctrl_init(struct gf_dev* gf_dev);
-int gf_parse_dts(struct gf_dev* gf_dev);
+int gf_pinctrl_init(struct gf_dev *gf_dev);
+int gf_parse_dts(struct gf_dev *gf_dev);
 void gf_cleanup(struct gf_dev *gf_dev);
 int gf_power_on(struct gf_dev *gf_dev);
 int gf_power_off(struct gf_dev *gf_dev);
@@ -157,5 +157,5 @@ void sendnlmsg_tp(struct fp_underscreen_info *msg, int length);
 int netlink_init(void);
 void netlink_exit(void);
 extern int gf_opticalfp_irq_handler(int event);
-extern int opticalfp_irq_handler(struct fp_underscreen_info* tp_info);
+extern int opticalfp_irq_handler(struct fp_underscreen_info *tp_info);
 #endif /*__GF_SPI_H*/
