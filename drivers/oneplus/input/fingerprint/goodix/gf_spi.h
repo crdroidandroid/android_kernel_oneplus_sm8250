@@ -3,15 +3,12 @@
  *
  * Coypright (c) 2017 Goodix
  */
+
 #ifndef __GF_SPI_H
 #define __GF_SPI_H
 
 #define CONFIG_MSM_RDM_NOTIFY
-#undef CONFIG_FB
-#if defined(CONFIG_MSM_RDM_NOTIFY)
 #include <drm/drm_panel.h>
-#endif
-
 #include <linux/types.h>
 #include <linux/notifier.h>
 /**********************************************************/
@@ -87,10 +84,7 @@ struct gf_ioc_chip_info {
 #define  GF_IOC_MAXNR    14  /* THIS MACRO IS NOT USED NOW... */
 #endif
 
-//#define AP_CONTROL_CLK       1
 #define  USE_PLATFORM_BUS     1
-//#define  USE_SPI_BUS	1
-//#define GF_FASYNC   1	/*If support fasync mechanism.*/
 #define GF_NETLINK_ENABLE 1
 #define GF_NET_EVENT_IRQ 1
 #define GF_NET_EVENT_FB_BLACK 2
@@ -104,11 +98,7 @@ struct gf_ioc_chip_info {
 struct gf_dev {
 	dev_t devt;
 	struct list_head device_entry;
-#if defined(USE_SPI_BUS)
-	struct spi_device *spi;
-#elif defined(USE_PLATFORM_BUS)
 	struct platform_device *spi;
-#endif
 	struct clk *core_clk;
 	struct clk *iface_clk;
 
@@ -127,14 +117,7 @@ struct gf_dev {
 	int regulator_vdd_vmax;
 	int regulator_vdd_current;
 
-#ifdef GF_FASYNC
-	struct fasync_struct *async;
-#endif
-#if defined(CONFIG_FB)
-	struct notifier_block notifier;
-#elif defined(CONFIG_MSM_RDM_NOTIFY)
 	struct notifier_block msm_drm_notif;
-#endif
 	char device_available;
 	char fb_black;
 	struct pinctrl         *gf_pinctrl;
@@ -143,19 +126,19 @@ struct gf_dev {
 	signed int enable_gpio;
 	int screen_state;
 };
-int gf_pinctrl_init(struct gf_dev *gf_dev);
-int gf_parse_dts(struct gf_dev *gf_dev);
-void gf_cleanup(struct gf_dev *gf_dev);
-int gf_power_on(struct gf_dev *gf_dev);
-int gf_power_off(struct gf_dev *gf_dev);
+static inline int gf_pinctrl_init(struct gf_dev *gf_dev);
+static inline int gf_parse_dts(struct gf_dev *gf_dev);
+static inline void gf_cleanup(struct gf_dev *gf_dev);
+static inline int gf_power_on(struct gf_dev *gf_dev);
+static inline int gf_power_off(struct gf_dev *gf_dev);
 
-int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
-int gf_irq_num(struct gf_dev *gf_dev);
+static inline int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
+static inline int gf_irq_num(struct gf_dev *gf_dev);
 
-void sendnlmsg(char *msg);
-void sendnlmsg_tp(struct fp_underscreen_info *msg, int length);
-int netlink_init(void);
-void netlink_exit(void);
+static inline void sendnlmsg(char *msg);
+static inline void sendnlmsg_tp(struct fp_underscreen_info *msg, int length);
+static inline int netlink_init(void);
+static inline void netlink_exit(void);
 extern int gf_opticalfp_irq_handler(int event);
 extern int opticalfp_irq_handler(struct fp_underscreen_info *tp_info);
 #endif /*__GF_SPI_H*/
