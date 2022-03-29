@@ -1518,6 +1518,7 @@ static int ep_insert(struct eventpoll *ep, const struct epoll_event *event,
 
 error_unregister:
 	ep_unregister_pollwait(ep, epi);
+
 error_remove_epi:
 	spin_lock(&tfile->f_lock);
 	list_del_rcu(&epi->fllink);
