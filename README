@@ -1,3 +1,15 @@
+# Redbull KSU Next + SuSFS kernel tree
+
+
+To build, run below within kernel branch and then build, the rest is ready.
+
+curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
+
+
+
+
+
+
 Linux kernel
 ============
 
