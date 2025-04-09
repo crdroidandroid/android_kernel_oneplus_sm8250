@@ -177,7 +177,7 @@ SYSCALL_DEFINE1(syncfs, int, fd)
 {
 	struct fd f;
 	struct super_block *sb;
-	int ret;
+	int ret, ret2;
 
 	if (!fsync_enabled)
 		return 0;
@@ -191,8 +191,10 @@ SYSCALL_DEFINE1(syncfs, int, fd)
 	ret = sync_filesystem(sb);
 	up_read(&sb->s_umount);
 
+	ret2 = errseq_check_and_advance(&sb->s_wb_err, &f.file->f_sb_err);
+
 	fdput(f);
-	return ret;
+	return ret ? ret : ret2;
 }
 
 /**
