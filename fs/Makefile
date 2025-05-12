@@ -86,11 +86,7 @@ obj-$(CONFIG_ISO9660_FS)	+= isofs/
 obj-$(CONFIG_HFSPLUS_FS)	+= hfsplus/ # Before hfs to find wrapped HFS+
 obj-$(CONFIG_HFS_FS)		+= hfs/
 obj-$(CONFIG_ECRYPT_FS)		+= ecryptfs/
-ifneq ($(TARGET_PRODUCT),qssi)
-obj-$(CONFIG_SDCARD_FS)		+= osdcardfs/
-else
 obj-$(CONFIG_SDCARD_FS)		+= sdcardfs/
-endif
 obj-$(CONFIG_VXFS_FS)		+= freevxfs/
 obj-$(CONFIG_NFS_FS)		+= nfs/
 obj-$(CONFIG_EXPORTFS)		+= exportfs/
@@ -139,6 +135,3 @@ obj-$(CONFIG_CEPH_FS)		+= ceph/
 obj-$(CONFIG_PSTORE)		+= pstore/
 obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
 obj-$(CONFIG_EROFS_FS)		+= erofs/
-#ifdef OPLUS_FEATURE_EXFAT_SUPPORT
-obj-$(CONFIG_EXFAT_FS)		+= exfat/
-#endif /*OPLUS_FEATURE_EXFAT_SUPPORT*/
