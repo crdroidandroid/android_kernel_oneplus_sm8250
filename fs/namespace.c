@@ -1048,10 +1048,10 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	// For newly created mounts, the only caller process we care is KSU
 	if (unlikely(susfs_is_current_ksu_domain())) {
-		mnt = alloc_vfsmnt(name, true, 0);
+		mnt = alloc_vfsmnt(fc->source ?: "none", true, 0);
 		goto bypass_orig_flow;
 	}
-	mnt = alloc_vfsmnt(name, false, 0);
+	mnt = alloc_vfsmnt(fc->source ?: "none", false, 0);
 bypass_orig_flow:
 #else
 	mnt = alloc_vfsmnt(name);
@@ -1077,10 +1077,6 @@ bypass_orig_flow:
 	mnt->mnt.mnt_root	= dget(fc->root);
 	mnt->mnt_mountpoint	= mnt->mnt.mnt_root;
 	mnt->mnt_parent		= mnt;
-	mnt->mnt.mnt_root = root;
-	mnt->mnt.mnt_sb = root->d_sb;
-	mnt->mnt_mountpoint = mnt->mnt.mnt_root;
-	mnt->mnt_parent = mnt;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	// If caller process is zygote, then it is a normal mount, so we just reorder the mnt_id
