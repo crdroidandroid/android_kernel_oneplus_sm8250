@@ -1,0 +1,6 @@
+[submodule "KernelSU-Next"]
+	path = KernelSU-Next
+	url = https://github.com/SENSEIIIII/KernelSU-Next
+[submodule "16"]
+	path = 16
+	url = https://github.com/SENSEIIIII/KernelSU-Next
