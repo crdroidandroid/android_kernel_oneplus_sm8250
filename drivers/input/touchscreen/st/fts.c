@@ -27,6 +27,7 @@
 #include <linux/completion.h>
 /*#include <linux/wakelock.h>*/
 #include <linux/pm_wakeup.h>
+#include <linux/pinctrl/consumer.h>
 
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>

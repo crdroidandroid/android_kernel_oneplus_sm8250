@@ -11,6 +11,7 @@ ccflags-y += -I$(srctree)/techpack/camera-oplus/drivers/cam_sensor_module/cam_cc
 ccflags-y += -I$(srctree)/techpack/camera-oplus/drivers/cam_smmu
 ccflags-y += -I$(srctree)/techpack/camera-oplus/drivers/cam_core/
 ccflags-y += -I$(srctree)/techpack/camera-oplus/drivers/cam_sensor_module/cam_ois/onsemi_fw/
+ccflags-y += -I$(srctree)/techpack/camera-oplus/drivers/cam_sensor_module/cam_ois/
 
 obj-$(CONFIG_SPECTRA_CAMERA) += onsemi_fw/
 

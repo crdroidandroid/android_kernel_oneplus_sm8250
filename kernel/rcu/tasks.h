@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2020 Paul E. McKenney
  */
-
+#include "rcu.h"
 #ifdef CONFIG_TASKS_RCU
 
 struct rcu_tasks;
@@ -14,6 +14,31 @@ typedef void (*pertask_func_t)(struct task_struct *t, struct list_head *hop);
 typedef void (*postscan_func_t)(struct list_head *hop);
 typedef void (*holdouts_func_t)(struct list_head *hop, bool ndrpt, bool *frptp);
 typedef void (*postgp_func_t)(struct rcu_tasks *rtp);
+
+struct rcu_tasks {
+	struct rcu_head *cbs_head;
+	struct rcu_head **cbs_tail;
+	struct wait_queue_head cbs_wq;
+	raw_spinlock_t cbs_lock;
+	int gp_state;
+	int gp_sleep;
+	int init_fract;
+	unsigned long gp_jiffies;
+	unsigned long gp_start;
+	unsigned long n_gps;
+	unsigned long n_ipis;
+	unsigned long n_ipis_fails;
+	struct task_struct *kthread_ptr;
+	rcu_tasks_gp_func_t gp_func;
+	pregp_func_t pregp_func;
+	pertask_func_t pertask_func;
+	postscan_func_t postscan_func;
+	holdouts_func_t holdouts_func;
+	postgp_func_t postgp_func;
+	call_rcu_func_t call_func;
+	char *name;
+	char *kname;
+};
 
 #define RTGS_INIT		 0
 #define RTGS_WAIT_WAIT_CBS	 1
@@ -49,30 +74,7 @@ static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
 static DECLARE_WAIT_QUEUE_HEAD(rcu_tasks_cbs_wq);
 static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
 
-struct rcu_tasks {
-	struct rcu_head *cbs_head;
-	struct rcu_head **cbs_tail;
-	struct wait_queue_head cbs_wq;
-	raw_spinlock_t cbs_lock;
-	int gp_state;
-	int gp_sleep;
-	int init_fract;
-	unsigned long gp_jiffies;
-	unsigned long gp_start;
-	unsigned long n_gps;
-	unsigned long n_ipis;
-	unsigned long n_ipis_fails;
-	struct task_struct *kthread_ptr;
-	rcu_tasks_gp_func_t gp_func;
-	pregp_func_t pregp_func;
-	pertask_func_t pertask_func;
-	postscan_func_t postscan_func;
-	holdouts_func_t holdouts_func;
-	postgp_func_t postgp_func;
-	call_rcu_func_t call_func;
-	char *name;
-	char *kname;
-};
+
 
 /* Track exiting tasks in order to allow them to be waited for. */
 DEFINE_STATIC_SRCU(tasks_rcu_exit_srcu);

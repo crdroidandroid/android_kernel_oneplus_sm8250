@@ -35,6 +35,7 @@
 #include <linux/interrupt.h>
 #include <linux/regulator/consumer.h>
 #include "synaptics_tcm_core.h"
+#include <linux/pinctrl/consumer.h>
 
 /* #define RESET_ON_RESUME */
 

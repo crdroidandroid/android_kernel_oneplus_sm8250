@@ -38,9 +38,11 @@
 #include <asm/fixmap.h>
 #include <asm/traps.h>
 #include <asm/paravirt.h>
+#include <asm/syscall_wrapper.h>
 
 #define CREATE_TRACE_POINTS
 #include "vsyscall_trace.h"
+
 
 static enum { EMULATE, NONE } vsyscall_mode =
 #ifdef CONFIG_LEGACY_VSYSCALL_NONE
