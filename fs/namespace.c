@@ -1054,7 +1054,7 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 	mnt = alloc_vfsmnt(fc->source ?: "none", false, 0);
 bypass_orig_flow:
 #else
-	mnt = alloc_vfsmnt(name);
+	mnt = alloc_vfsmnt(fc->source ?: "none");
 #endif
 	if (!mnt)
 		return ERR_PTR(-ENOMEM);
