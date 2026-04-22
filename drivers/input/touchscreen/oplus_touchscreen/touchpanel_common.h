@@ -851,6 +851,8 @@ struct touchpanel_data {
 	bool lcd_tp_refresh_support; /*lcd nofity tp refresh fps switch*/
 	bool optimized_show_support; /*support to show total optimized time*/
 	bool auto_test_need_cal_support; /*multiple panel consistency if contains samsung ic to calivation*/
+	bool calibration_support;                       /*multiple panel consistency if contains samsung ic to calivation*/
+	bool sportify_aod_gesture_support;
 	bool hall_status; /*control state of hall status*/
 	bool load_fw_failed;
 	bool snr_read_support; /*feature to support reading snr data*/

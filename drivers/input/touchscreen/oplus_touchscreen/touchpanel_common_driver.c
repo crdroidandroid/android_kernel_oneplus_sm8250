@@ -2204,6 +2204,12 @@ static ssize_t proc_gesture_control_indep_write(struct file *file,
 	if (ts->ts_ops->set_gesture_state) {
 		ts->ts_ops->set_gesture_state(ts->chip_data, value);
 	}
+
+	if (ts->sportify_aod_gesture_support && ts->is_suspended) {
+		TPD_INFO("%s: now is suspend and sportify aod enable, change gesture mode \n", __func__);
+		ts->ts_ops->mode_switch(ts->chip_data, MODE_GESTURE, true);
+	}
+
 	mutex_unlock(&ts->mutex);
 
 	return count;
@@ -3149,20 +3155,6 @@ static ssize_t proc_limit_switch_write(struct file *file, const char __user *buf
 	return count;
 }
 
-static ssize_t proc_limit_switch_read(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
-{
-	int ret = 0;
-	char page[4] = {0};
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
-
-	if (!ts) {
-		sprintf(page, "%d\n", -1); /*no support*/
-	} else {
-		sprintf(page, "%d\n", ts->limit_switch); /*support*/
-	}
-	ret = simple_read_from_buffer(user_buf, count, ppos, page, strlen(page));
-	return ret;
-}
 
 static ssize_t proc_dead_zone_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
 {
@@ -3215,12 +3207,6 @@ static ssize_t proc_dead_zone_read(struct file *file, char __user *user_buf, siz
 	return ret;
 }
 
-static const struct file_operations proc_limit_switch_fops = {
-	.write = proc_limit_switch_write,
-	.read  = proc_limit_switch_read,
-	.open  = simple_open,
-	.owner = THIS_MODULE,
-};
 
 static const struct file_operations proc_tp_dead_zone_fops = {
 	.write = proc_dead_zone_write,
@@ -3275,6 +3261,7 @@ static ssize_t proc_corner_dead_zone_l_read(struct file *file, char __user *user
 	ret = simple_read_from_buffer(user_buf, count, ppos, page, strlen(page));
 	return ret;
 }
+
 
 static const struct file_operations proc_tp_corner_dead_zone_l_fops = {
 	.write = proc_corner_dead_zone_l_write,
@@ -3337,37 +3324,6 @@ static const struct file_operations proc_tp_corner_dead_zone_p_fops = {
 	.owner = THIS_MODULE,
 };
 
-static ssize_t proc_limit_switch_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
-{
-	int value = 0;
-	char buf[4] = {0};
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
-
-	if (count > 4) {
-		TPD_INFO("%s:count > 4\n", __func__);
-		return count;
-	}
-
-	if (!ts) {
-		return 0;
-	}
-
-	if (copy_from_user(buf, buffer, count)) {
-		TPD_INFO("%s: read proc input error.\n", __func__);
-		return count;
-	}
-	sscanf(buf, "%d", &value);
-	ts->limit_switch = value;
-
-	TPD_DEBUG("%s: ts->limit_switch = %d\n", __func__, value);
-	if (ts->is_suspended == 0) {
-		mutex_lock(&ts->mutex);
-		ts->ts_ops->mode_switch(ts->chip_data, MODE_LIMIT_SWITCH, ts->limit_switch);
-		mutex_unlock(&ts->mutex);
-	}
-	return count;
-}
-
 static ssize_t proc_limit_switch_read(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
 {
 	int ret = 0;
@@ -3383,56 +3339,7 @@ static ssize_t proc_limit_switch_read(struct file *file, char __user *user_buf, 
 	return ret;
 }
 
-static ssize_t proc_dead_zone_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
-{
-	char buf[8] = {0};
-	int data[6] = {0};
-	int ret = -1;
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
 
-	if (!ts) {
-		TPD_INFO("%s: ts is NULL\n", __func__);
-		return count;
-	}
-
-	ret = copy_from_user(buf, buffer, count);
-	if (ret) {
-		TPD_INFO("%s: read proc input error.\n", __func__);
-		return count;
-	}
-
-	if (sscanf(buf, "%d,%d", &data[0], &data[1]) == 2) {
-		if (data[0] > 50 || data[1] > 50) {
-			TPD_INFO("data not allow\n");
-			return count;
-		}
-		ts->dead_zone_l = data[0];
-		ts->dead_zone_p = data[1];
-	}
-	TPD_INFO("data[0] is %d, data[1] is %d\n", data[0], data[1]);
-
-	if (ts->is_suspended == 0) {
-		mutex_lock(&ts->mutex);
-		ts->ts_ops->mode_switch(ts->chip_data, MODE_LIMIT_SWITCH, ts->limit_switch);
-		mutex_unlock(&ts->mutex);
-	}
-	return count;
-}
-
-static ssize_t proc_dead_zone_read(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
-{
-	int ret = 0;
-	char page[9] = {0};
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
-
-	if (!ts) {
-		sprintf(page, "%d\n", -1); /*no support*/
-	} else {
-		sprintf(page, "%d,%d\n", ts->dead_zone_l, ts->dead_zone_p);
-	}
-	ret = simple_read_from_buffer(user_buf, count, ppos, page, strlen(page));
-	return ret;
-}
 
 static const struct file_operations proc_limit_switch_fops = {
 	.write = proc_limit_switch_write,
@@ -3441,120 +3348,7 @@ static const struct file_operations proc_limit_switch_fops = {
 	.owner = THIS_MODULE,
 };
 
-static const struct file_operations proc_tp_dead_zone_fops = {
-	.write = proc_dead_zone_write,
-	.read = proc_dead_zone_read,
-	.open  = simple_open,
-	.owner = THIS_MODULE,
-};
 
-static ssize_t proc_corner_dead_zone_l_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
-{
-	char buf[8] = {0};
-	int data[6] = {0};
-	int ret = -1;
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
-
-	if (!ts) {
-		TPD_INFO("%s: ts is NULL\n", __func__);
-		return count;
-	}
-
-	ret = copy_from_user(buf, buffer, count);
-	if (ret) {
-		TPD_INFO("%s: read proc input error.\n", __func__);
-		return count;
-	}
-
-	if (sscanf(buf, "%d,%d", &data[0], &data[1]) == 2) {
-		ts->corner_dead_zone_xl = data[0];
-		ts->corner_dead_zone_yl = data[1];
-	}
-	TPD_INFO("data[0] is %d, data[1] is %d\n", data[0], data[1]);
-
-	if (ts->is_suspended == 0) {
-		mutex_lock(&ts->mutex);
-		ts->ts_ops->mode_switch(ts->chip_data, MODE_LIMIT_SWITCH, ts->limit_switch);
-		mutex_unlock(&ts->mutex);
-	}
-	return count;
-}
-
-static ssize_t proc_corner_dead_zone_l_read(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
-{
-	int ret = 0;
-	char page[9] = {0};
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
-
-	if (!ts) {
-		sprintf(page, "%d\n", -1);
-	} else {
-		sprintf(page, "%d,%d\n", ts->corner_dead_zone_xl, ts->corner_dead_zone_yl);
-	}
-	ret = simple_read_from_buffer(user_buf, count, ppos, page, strlen(page));
-	return ret;
-}
-
-static const struct file_operations proc_tp_corner_dead_zone_l_fops = {
-	.write = proc_corner_dead_zone_l_write,
-	.read = proc_corner_dead_zone_l_read,
-	.open  = simple_open,
-	.owner = THIS_MODULE,
-};
-
-static ssize_t proc_corner_dead_zone_p_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
-{
-	char buf[8] = {0};
-	int data[6] = {0};
-	int ret = -1;
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
-
-	if (!ts) {
-		TPD_INFO("%s: ts is NULL\n", __func__);
-		return count;
-	}
-
-	ret = copy_from_user(buf, buffer, count);
-	if (ret) {
-		TPD_INFO("%s: read proc input error.\n", __func__);
-		return count;
-	}
-
-	if (sscanf(buf, "%d,%d", &data[0], &data[1]) == 2) {
-		ts->corner_dead_zone_xp = data[0];
-		ts->corner_dead_zone_yp = data[1];
-	}
-	TPD_INFO("data[0] is %d, data[1] is %d\n", data[0], data[1]);
-
-	if (ts->is_suspended == 0) {
-		mutex_lock(&ts->mutex);
-		ts->ts_ops->mode_switch(ts->chip_data, MODE_LIMIT_SWITCH, ts->limit_switch);
-		mutex_unlock(&ts->mutex);
-	}
-	return count;
-}
-
-static ssize_t proc_corner_dead_zone_p_read(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
-{
-	int ret = 0;
-	char page[9] = {0};
-	struct touchpanel_data *ts = PDE_DATA(file_inode(file));
-
-	if (!ts) {
-		sprintf(page, "%d\n", -1);
-	} else {
-		sprintf(page, "%d,%d\n", ts->corner_dead_zone_xp, ts->corner_dead_zone_yp);
-	}
-	ret = simple_read_from_buffer(user_buf, count, ppos, page, strlen(page));
-	return ret;
-}
-
-static const struct file_operations proc_tp_corner_dead_zone_p_fops = {
-	.write = proc_corner_dead_zone_p_write,
-	.read = proc_corner_dead_zone_p_read,
-	.open  = simple_open,
-	.owner = THIS_MODULE,
-};
 
 static ssize_t proc_limit_control_read(struct file *file, char __user *user_buf,
 				       size_t count, loff_t *ppos)
