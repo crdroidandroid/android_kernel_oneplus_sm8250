@@ -7568,10 +7568,21 @@ static int aw8697_haptic_set_bst_peak_cur(struct aw8697 *aw8697,
 	return 0;
 }
 
+static unsigned char aw8697_haptic_set_level(struct aw8697 *aw8697, int gain)
+{
+    int val = 80;
+
+    val = aw8697->level * gain / 3;
+    if (val > 255)
+        val = 255;
+
+    return val;
+}
+
 static int aw8697_haptic_set_gain(struct aw8697 *aw8697, unsigned char gain)
 {
-	aw8697_i2c_write(aw8697, AW8697_REG_DATDBG, gain);
-	return 0;
+    aw8697_i2c_write(aw8697, AW8697_REG_DATDBG, aw8697_haptic_set_level(aw8697, gain));
+    return 0;
 }
 
 static int aw8697_haptic_set_pwm(struct aw8697 *aw8697, unsigned char mode)
@@ -10721,6 +10732,7 @@ static int aw8697_haptic_init(struct aw8697 *aw8697)
 
 	aw8697->activate_mode = AW8697_HAPTIC_ACTIVATE_CONT_MODE;
 	aw8697->vibration_style = AW8697_HAPTIC_VIBRATION_CRISP_STYLE;
+    aw8697->level = 3;
 
 	ret = aw8697_i2c_read(aw8697, AW8697_REG_WAVSEQ1, &reg_val);
 	aw8697->index = reg_val & 0x7F;
@@ -11375,11 +11387,54 @@ static ssize_t aw8697_gain_store(struct device *dev,
 
 	pr_err("%s: value=%d\n", __FUNCTION__, val);
 
-	mutex_lock(&aw8697->lock);
+ 	mutex_lock(&aw8697->lock);
 	aw8697->gain = val;
 	aw8697_haptic_set_gain(aw8697, aw8697->gain);
 	mutex_unlock(&aw8697->lock);
 	return count;
+}
+
+
+static ssize_t aw8697_level_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+#ifdef TIMED_OUTPUT
+    struct timed_output_dev *to_dev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(to_dev, struct aw8697, to_dev);
+#else
+    struct led_classdev *cdev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(cdev, struct aw8697, cdev);
+#endif
+
+    return snprintf(buf, PAGE_SIZE, "%d\n", aw8697->level);
+}
+
+static ssize_t aw8697_level_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t count)
+{
+#ifdef TIMED_OUTPUT
+    struct timed_output_dev *to_dev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(to_dev, struct aw8697, to_dev);
+#else
+    struct led_classdev *cdev = dev_get_drvdata(dev);
+    struct aw8697 *aw8697 = container_of(cdev, struct aw8697, cdev);
+#endif
+    unsigned int val = 0;
+    int rc = 0;
+
+    rc = kstrtouint(buf, 0, &val);
+    if (rc < 0)
+        return rc;
+
+    if (val < 0 || val > 10)
+        val = 3;
+
+    pr_info("%s: value=%d\n", __FUNCTION__, val);
+    mutex_lock(&aw8697->lock);
+    aw8697->level = val;
+    aw8697_haptic_set_gain(aw8697, aw8697->gain);
+    mutex_unlock(&aw8697->lock);
+    return count;
 }
 
 static ssize_t aw8697_seq_show(struct device *dev,
@@ -13294,18 +13349,13 @@ static DEVICE_ATTR(state, S_IWUSR | S_IRUGO, aw8697_state_show,
 
 //static DEVICE_ATTR(duration, S_IWUSR | S_IRUGO, aw8697_duration_show, aw8697_duration_store);
 //static DEVICE_ATTR(activate, S_IWUSR | S_IRUGO, aw8697_activate_show, aw8697_activate_store);
-static DEVICE_ATTR(duration, S_IWUSR | S_IWGRP | S_IRUGO, aw8697_duration_show,
-		   aw8697_duration_store);
-static DEVICE_ATTR(activate, S_IWUSR | S_IWGRP | S_IRUGO, aw8697_activate_show,
-		   aw8697_activate_store);
-static DEVICE_ATTR(activate_mode, S_IWUSR | S_IRUGO, aw8697_activate_mode_show,
-		   aw8697_activate_mode_store);
-static DEVICE_ATTR(index, S_IWUSR | S_IRUGO, aw8697_index_show,
-		   aw8697_index_store);
-static DEVICE_ATTR(vmax, S_IWUSR | S_IRUGO, aw8697_vmax_show,
-		   aw8697_vmax_store);
-static DEVICE_ATTR(gain, S_IWUSR | S_IRUGO, aw8697_gain_show,
-		   aw8697_gain_store);
+static DEVICE_ATTR(duration, S_IWUSR | S_IWGRP | S_IRUGO, aw8697_duration_show, aw8697_duration_store);
+static DEVICE_ATTR(activate, S_IWUSR | S_IWGRP | S_IRUGO, aw8697_activate_show, aw8697_activate_store);
+static DEVICE_ATTR(activate_mode, S_IWUSR | S_IRUGO, aw8697_activate_mode_show, aw8697_activate_mode_store);
+static DEVICE_ATTR(index, S_IWUSR | S_IRUGO, aw8697_index_show, aw8697_index_store);
+static DEVICE_ATTR(vmax, S_IWUSR | S_IRUGO, aw8697_vmax_show, aw8697_vmax_store);
+static DEVICE_ATTR(gain, S_IWUSR | S_IRUGO, aw8697_gain_show, aw8697_gain_store);
+static DEVICE_ATTR(level, S_IWUSR | S_IRUGO, aw8697_level_show, aw8697_level_store);
 static DEVICE_ATTR(seq, S_IWUSR | S_IRUGO, aw8697_seq_show, aw8697_seq_store);
 static DEVICE_ATTR(loop, S_IWUSR | S_IRUGO, aw8697_loop_show,
 		   aw8697_loop_store);
@@ -13382,20 +13432,21 @@ static DEVICE_ATTR(gun_mode, S_IWUSR | S_IRUGO, aw8697_gun_mode_show,
 		   aw8697_gun_mode_store); //hch 20190917
 
 static struct attribute *aw8697_vibrator_attributes[] = {
-	&dev_attr_state.attr,
-	&dev_attr_duration.attr,
-	&dev_attr_activate.attr,
-	&dev_attr_activate_mode.attr,
-	&dev_attr_index.attr,
-	&dev_attr_vmax.attr,
-	&dev_attr_gain.attr,
-	&dev_attr_seq.attr,
-	&dev_attr_loop.attr,
-	&dev_attr_register.attr,
-	&dev_attr_rtp.attr,
-	&dev_attr_ram_update.attr,
-	&dev_attr_f0.attr,
-	&dev_attr_cali.attr,
+    &dev_attr_state.attr,
+    &dev_attr_duration.attr,
+    &dev_attr_activate.attr,
+    &dev_attr_activate_mode.attr,
+    &dev_attr_index.attr,
+    &dev_attr_vmax.attr,
+    &dev_attr_gain.attr,
+    &dev_attr_level.attr,
+    &dev_attr_seq.attr,
+    &dev_attr_loop.attr,
+    &dev_attr_register.attr,
+    &dev_attr_rtp.attr,
+    &dev_attr_ram_update.attr,
+    &dev_attr_f0.attr,
+    &dev_attr_cali.attr,
 #ifdef CONFIG_OPLUS_HAPTIC_OOS
 	&dev_attr_short_circuit_check.attr,
 #endif

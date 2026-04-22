@@ -437,15 +437,16 @@ struct aw8697 {
 
 	unsigned char auto_boost;
 
-	int state;
-	int duration;
-	int amplitude;
-	int index;
-	int vmax;
-	int gain;
-	unsigned int gun_type; //hch 20190917
-	unsigned int bullet_nr; //hch 20190917
-	unsigned int gun_mode;
+    int state;
+    int duration;
+    int amplitude;
+    int index;
+    int vmax;
+    int gain;
+    int level;
+    unsigned int gun_type;      //hch 20190917
+    unsigned int bullet_nr; //hch 20190917
+    unsigned int gun_mode;
 
 	unsigned char seq[AW8697_SEQUENCER_SIZE];
 	unsigned char loop[AW8697_SEQUENCER_SIZE];
