@@ -103,13 +103,6 @@ static int ffc_val = 900;
 module_param(ffc_val, int, 0644);
 #endif
 
-#ifdef CONFIG_FORCE_FAST_CHARGE
-#include <linux/moduleparam.h>
-#include <linux/fastchg.h>
-static int ffc_val = 900;
-module_param(ffc_val, int, 0644);
-#endif
-
 #define FLASH_SCREEN_CTRL_OTA 0X01
 #define FLASH_SCREEN_CTRL_DTSI 0X02
 
